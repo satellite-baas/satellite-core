@@ -1,72 +1,61 @@
 version: '3.8'
 
 services:
-  traefik-test:
+  traefik:
     image: 'traefik:latest'
+    container_name: 'traefik'
+    restart: always
     command:
       - '--api.insecure=true'
-      - '--providers.docker.swarmMode=true'
+      - '--providers.docker=true'
       - '--providers.docker.exposedbydefault=false'
-      - '--providers.docker.network=proxy'
       - '--entrypoints.web.address=:80'
       - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
       - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
       - '--entrypoints.websecure.address=:443'
-      - '--certificatesresolvers.le.acme.tlschallenge=true'
-      - '--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json'
+      - '--certificatesresolvers.myresolver.acme.tlschallenge=true'
+      - '--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json'
       - '--certificatesresolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory'
     ports:
-      - target: 80
-        published: 80
-      - target: 443
-        published: 443
-      - target: 8080
-        published: 8080
+      - '80:80'
+      - '443:443'
+      - '8080:8080'
     volumes:
       - 'certs:/letsencrypt'
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
-    networks:
-      - proxy
+
+  app_server:
+    build: ./server
+    ports:
+      - '3000:3000'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.rule=Host(`${SERVICE_NAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.entrypoints=websecure'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.tls.certresolver=le'
 
   file_server:
     image: nginx:1.19-alpine
     volumes:
       - ./nginx:/etc/nginx:ro
-    networks:
-      - proxy
-      - backend
-    deploy:
-      labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.services.${SERVICE_NAME}.loadbalancer.server.port=80'
-        - 'traefik.http.routers.${SERVICE_NAME}.rule=Host(`${SERVICE_NAME}.${DOMAIN}`)'
-        - 'traefik.http.routers.${SERVICE_NAME}.entrypoints=websecure'
-        - 'traefik.http.routers.${SERVICE_NAME}.tls.certresolver=le'
-        - 'traefik.http.routers.${SERVICE_NAME}.middlewares=corsHeaders'
-        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
-        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
-        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.${SERVICE_NAME}_static.rule=Host(`${SERVICE_NAME}.${DOMAIN}`)'
+      - 'traefik.http.routers.${SERVICE_NAME}_static.entrypoints=websecure'
+      - 'traefik.http.routers.${SERVICE_NAME}_static.tls.certresolver=le'
 
   alpha:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
-    networks:
-      - backend
     command: dgraph alpha --my=alpha:7080 --zero=Zero:5080 --graphql_extensions=false --whitelist 0.0.0.0/0
 
   zero:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
-    networks:
-      - backend
     command: dgraph zero --my=zero:5080
 
 volumes:
   dgraph_data:
   certs:
-
-networks:
-  proxy:
-  backend:
