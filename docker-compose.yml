@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # traefik image included for development purposes - will be deleted when this stack is deploy as part of a swarm
   traefik:
     image: 'traefik:latest'
     container_name: 'traefik'
@@ -28,6 +29,8 @@ services:
     build: ./server
     ports:
       - '3000:3000'
+    environment:
+      - API_KEY=${API_KEY}
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.${SERVICE_NAME}_app.rule=Host(`${SERVICE_NAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
