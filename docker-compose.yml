@@ -33,6 +33,10 @@ services:
       - 'traefik.http.routers.${SERVICE_NAME}_app.rule=Host(`${SERVICE_NAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
       - 'traefik.http.routers.${SERVICE_NAME}_app.entrypoints=websecure'
       - 'traefik.http.routers.${SERVICE_NAME}_app.tls.certresolver=le'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.middlewares=corsHeaders'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
 
   file_server:
     image: nginx:1.19-alpine
