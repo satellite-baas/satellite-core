@@ -1,68 +1,66 @@
+version: '3.8'
 
-# This Docker Compose file can be used to quickly bootup Dgraph Zero
-# and Alpha in different Docker containers.
-
-# It mounts /tmp/data on the host machine to /dgraph within the
-# container. You can change /tmp/data to a more appropriate location.
-# Run `docker-compose up` to start Dgraph.
-
-version: "3.2"
 services:
-  webserver:
-    image: nginx:mainline-alpine
-    container_name: webserver
-    restart: unless-stopped
+  # traefik image included for development purposes - will be deleted when this stack is deployed as part of a swarm
+  traefik:
+    image: 'traefik:latest'
+    container_name: 'traefik'
+    restart: always
+    command:
+      - '--api.insecure=true'
+      - '--providers.docker=true'
+      - '--providers.docker.exposedbydefault=false'
+      - '--entrypoints.web.address=:80'
+      - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
+      - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
+      - '--entrypoints.websecure.address=:443'
+      - '--certificatesresolvers.myresolver.acme.tlschallenge=true'
+      - '--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json'
+      - '--certificatesresolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory'
     ports:
-      - "80:80"
-      - "443:443"
+      - '80:80'
+      - '443:443'
+      - '8080:8080'
     volumes:
-      - web-root:/var/www/html
-      - ./nginx-conf:/etc/nginx/conf.d
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-      - dhparam:/etc/ssl/certs
-    depends_on:
-      - alpha 
-  certbot:
-    image: certbot/certbot
-    container_name: certbot
+      - 'certs:/letsencrypt'
+      - '/var/run/docker.sock:/var/run/docker.sock:ro'
+
+  app_server:
+    build: ./server
+    environment:
+      - API_KEY=${API_KEY}
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.rule=Host(`${SERVICE_NAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.entrypoints=websecure'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.tls.certresolver=le'
+      - 'traefik.http.routers.${SERVICE_NAME}_app.middlewares=corsHeaders'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
+
+  file_server:
+    image: nginx:1.19-alpine
     volumes:
-      - certbot-etc:/etc/letsencrypt
-      - certbot-var:/var/lib/letsencrypt
-      - web-root:/var/www/html
-    depends_on:
-      - webserver
-    command: certonly --email ${CERT_EMAIL} --agree-tos --no-eff-email --force-renewal -d ${HOSTNAME} -d www.${HOSTNAME}  
-  zero:
-    image: dgraph/dgraph:latest
-    volumes:
-      - /tmp/data:/dgraph
-    ports:
-      - 5080:5080
-      - 6080:6080
-    restart: on-failure
-    command: dgraph zero --my=zero:5080
+      - ./nginx:/etc/nginx:ro
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.routers.${SERVICE_NAME}_static.rule=Host(`${SERVICE_NAME}.${DOMAIN}`)'
+      - 'traefik.http.routers.${SERVICE_NAME}_static.entrypoints=websecure'
+      - 'traefik.http.routers.${SERVICE_NAME}_static.tls.certresolver=le'
+
   alpha:
     image: dgraph/dgraph:latest
     volumes:
-      - /tmp/data:/dgraph
-    ports:
-      - 8080:8080
-      - 9080:9080
-    restart: on-failure
-    command: dgraph alpha --whitelist 0.0.0.0/0 --lru_mb=1024 --my=alpha:7080 --zero=zero:5080
-  ratel:
+      - dgraph_data:/dgraph
+    command: dgraph alpha --my=alpha:7080 --zero=Zero:5080 --graphql_extensions=false --whitelist 0.0.0.0/0
+
+  zero:
     image: dgraph/dgraph:latest
-    ports:
-      - 8000:8000
-    command: dgraph-ratel
+    volumes:
+      - dgraph_data:/dgraph
+    command: dgraph zero --my=zero:5080
+
 volumes:
-  certbot-etc:
-  certbot-var:
-  web-root:
-  dhparam:
-    driver: local
-    driver_opts:
-      type: none
-      device: ${DH_PARAM_PATH}
-      o: bind
+  dgraph_data:
+  certs:
