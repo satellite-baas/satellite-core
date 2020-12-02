@@ -11,7 +11,7 @@ const extractTokenFromBearer = (str) => {
 };
 
 const checkAPIKey = (req, res, next) => {
-  if (req.header('X-API-Key') !== API_KEY) {
+  if (API_KEY && req.header('X-API-Key') !== API_KEY) {
     throw new Error('invalid credentials');
   }
 
@@ -20,7 +20,7 @@ const checkAPIKey = (req, res, next) => {
 
 const proxyToDgraph = (req, res, next) => {
   const authString = req.headers.authorization;
-  const token = extractTokenFromBearer(authString);
+  const token = authString ? extractTokenFromBearer(authString) : '';
 
   const proxy = createProxyMiddleware({
     headers: { 'X-Dgraph-AccessToken': token },
@@ -35,6 +35,7 @@ app.use(morgan('combined'));
 app.use('/graphql', checkAPIKey, proxyToDgraph);
 
 app.use(function (err, req, res, next) {
+  console.log(err);
   res.status(401).json({
     data: {
       Message: 'Invalid credentials',
