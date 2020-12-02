@@ -3,7 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const morgan = require('morgan');
 
 const app = express();
-const API_KEY = process.env.API_KEY;
+const API_KEY = process.env.APIKEY;
 
 const extractTokenFromBearer = (str) => {
   const parts = str.split(' ');
@@ -24,7 +24,7 @@ const proxyToDgraph = (req, res, next) => {
 
   const proxy = createProxyMiddleware({
     headers: { 'X-Dgraph-AccessToken': token },
-    target: 'http://alpha:8080',
+    target: `http://alpha_${process.env.SATNAME}:8080`,
   });
 
   proxy(req, res, next);
