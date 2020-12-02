@@ -1,5 +1,6 @@
 const express = require('express');
 const multer = require('multer');
+const morgan = require('morgan');
 
 const app = express();
 
@@ -13,6 +14,8 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage });
+
+app.use(morgan('combined'));
 
 app.post('/upload', upload.any(), function (req, res, next) {
   res.end();
