@@ -1,78 +1,89 @@
 version: '3.8'
 
 services:
-  # traefik image included for development purposes - will be deleted when this stack is deployed as part of a swarm
-  traefik:
+  traefik-test:
     image: 'traefik:latest'
-    container_name: 'traefik'
-    restart: always
     command:
       - '--api.insecure=true'
       - '--providers.docker=true'
       - '--providers.docker.exposedbydefault=false'
+      - '--providers.docker.network=proxy'
       - '--entrypoints.web.address=:80'
       - '--entrypoints.web.http.redirections.entrypoint.to=websecure'
       - '--entrypoints.web.http.redirections.entrypoint.scheme=https'
       - '--entrypoints.websecure.address=:443'
-      - '--certificatesresolvers.myresolver.acme.tlschallenge=true'
-      - '--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json'
+      - '--certificatesresolvers.le.acme.tlschallenge=true'
+      - '--certificatesresolvers.le.acme.storage=/letsencrypt/acme.json'
       - '--certificatesresolvers.le.acme.caServer=https://acme-staging-v02.api.letsencrypt.org/directory'
     ports:
       - '80:80'
       - '443:443'
-      - '8080:8080'
+      - '8090:8080'
     volumes:
       - 'certs:/letsencrypt'
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
-
-  app_server:
-    # image: 'satellitebaas/core-server'
-    build: ./server
-    environment:
-      - API_KEY=${API_KEY}
-    volumes:
-      - 'storage:/media/data'
-    ports:
-      - '5000:5000'
-    labels:
-      - 'traefik.enable=true'
-      - 'traefik.http.services.${SERVICE_NAME}_app.loadbalancer.server.port=3000'
-      - 'traefik.http.routers.${SERVICE_NAME}_app.rule=Host(`${SERVICE_NAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
-      - 'traefik.http.routers.${SERVICE_NAME}_app.entrypoints=websecure'
-      - 'traefik.http.routers.${SERVICE_NAME}_app.tls.certresolver=le'
-      - 'traefik.http.routers.${SERVICE_NAME}_app.middlewares=corsHeaders'
-      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
-      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
-      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
     networks:
-      - stack
+      proxy:
 
   file_server:
     image: nginx:1.19-alpine
     volumes:
       - ./nginx:/etc/nginx:ro
       - 'storage:/media/data'
+    networks:
+      proxy:
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.${SERVICE_NAME}_files.rule=Host(`${SERVICE_NAME}.${DOMAIN}`)'
-      - 'traefik.http.routers.${SERVICE_NAME}_files.entrypoints=websecure'
-      - 'traefik.http.routers.${SERVICE_NAME}_files.tls.certresolver=le'
+      - 'traefik.http.routers.${SATNAME}_files.rule=Host(`${SATNAME}.${DOMAIN}`)'
+      - 'traefik.http.routers.${SATNAME}_files.entrypoints=websecure'
+      - 'traefik.http.routers.${SATNAME}_files.tls.certresolver=le'
+
+  app_server:
+    build: ./server
+    environment:
+      # - APIKEY=${APIKEY}
+      - SATNAME=${SATNAME}
+    volumes:
+      - 'storage:/media/data'
+    networks:
+      proxy:
+      backend:
+        aliases:
+          - app_${SATNAME}
+    ports:
+      - '5000:5000'
+      - '3000:3000'
+    labels:
+      - 'traefik.enable=true'
+      - 'traefik.http.services.${SATNAME}_app.loadbalancer.server.port=3000'
+      - 'traefik.http.routers.${SATNAME}_app.rule=Host(`${SATNAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
+      - 'traefik.http.routers.${SATNAME}_app.entrypoints=websecure'
+      - 'traefik.http.routers.${SATNAME}_app.tls.certresolver=le'
+      - 'traefik.http.routers.${SATNAME}_app.middlewares=corsHeaders'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
+      - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
 
   alpha:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
+    networks:
+      backend:
+        aliases:
+          - alpha_${SATNAME}
+      stack:
+    ports:
+      - '8080:8080'
     command: dgraph alpha --my=alpha:7080 --zero=Zero:5080 --graphql_extensions=false --whitelist 0.0.0.0/0
 
   zero:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
-    command: dgraph zero --my=zero:5080
     networks:
       stack:
-        aliases:
-          - test_alias
+    command: dgraph zero --my=zero:5080
 
 volumes:
   dgraph_data:
@@ -81,3 +92,5 @@ volumes:
 
 networks:
   stack:
+  backend:
+  proxy:
