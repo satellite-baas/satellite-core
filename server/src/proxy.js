@@ -18,17 +18,27 @@ const checkAPIKey = (req, res, next) => {
   next();
 };
 
-const proxyToDgraph = (req, res, next) => {
-  const authString = req.headers.authorization;
-  const token = authString ? extractTokenFromBearer(authString) : '';
+const proxyToDgraph = createProxyMiddleware({
+  target: `http://alpha_${process.env.SATNAME}:8080`,
+  changeOrigin: true,
+  ws: true,
+  logLevel: 'debug',
+});
 
-  const proxy = createProxyMiddleware({
-    headers: { 'X-Dgraph-AccessToken': token },
-    target: `http://alpha_${process.env.SATNAME}:8080`,
-  });
+// const proxyToDgraph = (req, res, next) => {
+//   const authString = req.headers.authorization;
+//   const token = authString ? extractTokenFromBearer(authString) : '';
 
-  proxy(req, res, next);
-};
+//   const proxy = createProxyMiddleware({
+//     headers: { 'X-Dgraph-AccessToken': token },
+//     target: `http://alpha_${process.env.SATNAME}:8080`,
+//     changeOrigin: true,
+//     ws: true,
+//     logLevel: 'debug',
+//   });
+
+//   proxy(req, res, next);
+// };
 
 app.use(morgan('combined'));
 
