@@ -3,6 +3,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const morgan = require('morgan');
 
 const app = express();
+
 const API_KEY = process.env.APIKEY;
 
 const extractTokenFromBearer = (str) => {
@@ -20,25 +21,13 @@ const checkAPIKey = (req, res, next) => {
 
 const proxyToDgraph = createProxyMiddleware({
   target: `http://alpha_${process.env.SATNAME}:8080`,
-  changeOrigin: true,
   ws: true,
-  logLevel: 'debug',
+  onProxyReq(proxyReq, req, res) {
+    const authString = req.headers.authorization;
+    const token = authString ? extractTokenFromBearer(authString) : '';
+    proxyReq.setHeader('X-Dgraph-AccessToken', token);
+  },
 });
-
-// const proxyToDgraph = (req, res, next) => {
-//   const authString = req.headers.authorization;
-//   const token = authString ? extractTokenFromBearer(authString) : '';
-
-//   const proxy = createProxyMiddleware({
-//     headers: { 'X-Dgraph-AccessToken': token },
-//     target: `http://alpha_${process.env.SATNAME}:8080`,
-//     changeOrigin: true,
-//     ws: true,
-//     logLevel: 'debug',
-//   });
-
-//   proxy(req, res, next);
-// };
 
 app.use(morgan('combined'));
 
