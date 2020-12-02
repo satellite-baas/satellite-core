@@ -22,6 +22,7 @@ const checkAPIKey = (req, res, next) => {
 const proxyToDgraph = createProxyMiddleware({
   target: `http://alpha_${process.env.SATNAME}:8080`,
   ws: true,
+  changeOrigin: true,
   onProxyReq(proxyReq, req, res) {
     const authString = req.headers.authorization;
     const token = authString ? extractTokenFromBearer(authString) : '';

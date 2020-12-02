@@ -50,9 +50,8 @@ services:
       backend:
         aliases:
           - app_${SATNAME}
-    ports:
-      - '5000:5000'
-      - '3000:3000'
+    # ports:
+    #   - '5000:5000'
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.services.${SATNAME}_app.loadbalancer.server.port=3000'
