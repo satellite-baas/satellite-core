@@ -44,6 +44,8 @@ services:
       - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
       - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
       - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
+    networks:
+      - stack
 
   file_server:
     image: nginx:1.19-alpine
@@ -67,8 +69,15 @@ services:
     volumes:
       - dgraph_data:/dgraph
     command: dgraph zero --my=zero:5080
+    networks:
+      stack:
+        aliases:
+          - test_alias
 
 volumes:
   dgraph_data:
   certs:
   storage:
+
+networks:
+  stack:
