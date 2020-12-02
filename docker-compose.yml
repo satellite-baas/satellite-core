@@ -26,11 +26,17 @@ services:
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
 
   app_server:
+    # image: 'satellitebaas/core-server'
     build: ./server
     environment:
       - API_KEY=${API_KEY}
+    volumes:
+      - 'storage:/media/data'
+    ports:
+      - '5000:5000'
     labels:
       - 'traefik.enable=true'
+      - 'traefik.http.services.${SERVICE_NAME}_app.loadbalancer.server.port=3000'
       - 'traefik.http.routers.${SERVICE_NAME}_app.rule=Host(`${SERVICE_NAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
       - 'traefik.http.routers.${SERVICE_NAME}_app.entrypoints=websecure'
       - 'traefik.http.routers.${SERVICE_NAME}_app.tls.certresolver=le'
@@ -43,11 +49,12 @@ services:
     image: nginx:1.19-alpine
     volumes:
       - ./nginx:/etc/nginx:ro
+      - 'storage:/media/data'
     labels:
       - 'traefik.enable=true'
-      - 'traefik.http.routers.${SERVICE_NAME}_static.rule=Host(`${SERVICE_NAME}.${DOMAIN}`)'
-      - 'traefik.http.routers.${SERVICE_NAME}_static.entrypoints=websecure'
-      - 'traefik.http.routers.${SERVICE_NAME}_static.tls.certresolver=le'
+      - 'traefik.http.routers.${SERVICE_NAME}_files.rule=Host(`${SERVICE_NAME}.${DOMAIN}`)'
+      - 'traefik.http.routers.${SERVICE_NAME}_files.entrypoints=websecure'
+      - 'traefik.http.routers.${SERVICE_NAME}_files.tls.certresolver=le'
 
   alpha:
     image: dgraph/dgraph:latest
@@ -64,3 +71,4 @@ services:
 volumes:
   dgraph_data:
   certs:
+  storage:

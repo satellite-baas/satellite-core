@@ -15,8 +15,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.post('/upload', upload.any(), function (req, res, next) {
-  console.log(req.body, 'Body');
-  console.log(req.files, 'files');
   res.end();
 });
 
