@@ -1,7 +1,13 @@
 const proxyServer = require('./proxy');
+const uploadServer = require('./upload');
 
 const proxyPort = 3000;
+const uploadPort = 5000;
 
 proxyServer.listen(proxyPort, () => {
   console.log(`Proxy server listening at http://localhost:${proxyPort}`);
+});
+
+uploadServer.listen(uploadPort, () => {
+  console.log(`Upload server listening at http://localhost:${uploadPort}`);
 });
