@@ -1,15 +1,21 @@
 const fs = require('fs');
 
-const getFiles = (dir, files_) => {
+const getFiles = (dir, baseDir = dir, files_) => {
   files_ = files_ || [];
   const files = fs.readdirSync(dir);
+  const pattern = `${baseDir}/`;
+  const re = new RegExp(pattern);
 
   for (let idx = 0; idx < files.length; idx += 1) {
     const name = dir + '/' + files[idx];
-    if (fs.statSync(name).isDirectory()) {
-      getFiles(name, files_);
+    const stats = fs.statSync(name);
+
+    if (stats.isDirectory()) {
+      getFiles(name, baseDir, files_);
     } else {
-      files_.push(name);
+      const thisFile = {};
+      thisFile.name = name.replace(pattern, '');
+      files_.push(thisFile);
     }
   }
 
