@@ -1,5 +1,4 @@
 const fs = require('fs');
-const { getHeapCodeStatistics } = require('v8');
 
 const getFiles = (dir, baseDir = dir, files_) => {
   files_ = files_ || [];
