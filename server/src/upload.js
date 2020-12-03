@@ -17,7 +17,11 @@ const upload = multer({ storage });
 
 app.use(morgan('combined'));
 
-app.post('/upload', upload.any(), function (req, res, next) {
+app.get('/files', (req, res, next) => {
+  res.send('hello from files');
+});
+
+app.post('/upload', upload.any(), (req, res, next) => {
   res.end();
 });
 
