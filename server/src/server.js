@@ -3,8 +3,9 @@ const multer = require('multer');
 const morgan = require('morgan');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-const { getFiles } = require('./helpers');
+const { getFiles, extractTokenFromBearer } = require('./helpers');
 
+const API_KEY = process.env.APIKEY;
 const FILES_DIR = '/media/data';
 const PORT = 5000;
 
@@ -22,6 +23,18 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.use(morgan('combined'));
+
+app.post('/apikey', (req, res) => {
+  if (API_KEY && req.header('X-API-Key') !== API_KEY) {
+    res.sendStatus(401);
+  }
+
+  const authString = req.headers.authorization;
+  const token = authString ? extractTokenFromBearer(authString) : '';
+
+  res.set('X-Dgraph-AccessToken', token);
+  res.status(200).send();
+});
 
 app.get('/files', (req, res, next) => {
   const fileList = getFiles(FILES_DIR);

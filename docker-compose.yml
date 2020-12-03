@@ -30,7 +30,7 @@ services:
     ports:
       - '3030:80'
 
-  file_server:
+  web_proxy:
     image: nginx:1.19-alpine
     volumes:
       - ./nginx:/etc/nginx:ro
@@ -40,7 +40,7 @@ services:
       - 'traefik.http.routers.${SATNAME}_files.rule=Host(`${SATNAME}.${DOMAIN}`)'
       - 'traefik.http.routers.${SATNAME}_files.entrypoints=websecure'
       - 'traefik.http.routers.${SATNAME}_files.tls.certresolver=le'
-      - 'traefik.http.routers.${SATNAME}_app.middlewares=corsHeaders'
+      - 'traefik.http.routers.${SATNAME}_files.middlewares=corsHeaders'
       - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
       - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
       - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'

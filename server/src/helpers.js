@@ -24,6 +24,11 @@ const getFiles = (dir, baseDir = dir, files_) => {
   return files_;
 };
 
+const extractTokenFromBearer = (str) => {
+  const parts = str.split(' ');
+  return parts.length == 2 ? parts[1] : '';
+};
+
 const stripPathPrefix = (str, prefix) => {
   const pattern = `${prefix}/`;
   const re = new RegExp(pattern);
@@ -32,4 +37,5 @@ const stripPathPrefix = (str, prefix) => {
 
 module.exports = {
   getFiles,
+  extractTokenFromBearer,
 };
