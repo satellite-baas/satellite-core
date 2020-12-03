@@ -22,16 +22,19 @@ services:
     volumes:
       - 'certs:/letsencrypt'
       - '/var/run/docker.sock:/var/run/docker.sock:ro'
-    networks:
-      proxy:
+
+  test_proxy:
+    image: nginx:1.19-alpine
+    volumes:
+      - ./test-proxy/conf.d:/etc/nginx/conf.d:ro
+    ports:
+      - '3030:80'
 
   file_server:
     image: nginx:1.19-alpine
     volumes:
       - ./nginx:/etc/nginx:ro
       - 'storage:/media/data'
-    networks:
-      proxy:
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.routers.${SATNAME}_files.rule=Host(`${SATNAME}.${DOMAIN}`)'
@@ -45,13 +48,6 @@ services:
       - SATNAME=${SATNAME}
     volumes:
       - 'storage:/media/data'
-    networks:
-      proxy:
-      backend:
-        aliases:
-          - app_${SATNAME}
-    # ports:
-    #   - '5000:5000'
     labels:
       - 'traefik.enable=true'
       - 'traefik.http.services.${SATNAME}_app.loadbalancer.server.port=3000'
@@ -67,11 +63,6 @@ services:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
-    networks:
-      backend:
-        aliases:
-          - alpha_${SATNAME}
-      stack:
     ports:
       - '8080:8080'
     command: dgraph alpha --my=alpha:7080 --zero=Zero:5080 --graphql_extensions=false --whitelist 0.0.0.0/0
@@ -80,16 +71,9 @@ services:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
-    networks:
-      stack:
     command: dgraph zero --my=zero:5080
 
 volumes:
   dgraph_data:
   certs:
   storage:
-
-networks:
-  stack:
-  backend:
-  proxy:
