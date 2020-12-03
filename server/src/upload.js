@@ -1,6 +1,8 @@
 const express = require('express');
 const multer = require('multer');
 const morgan = require('morgan');
+const { createProxyMiddleware } = require('http-proxy-middleware');
+
 const { getFiles } = require('./helpers');
 
 const app = express();
@@ -28,5 +30,13 @@ app.get('/files', (req, res, next) => {
 app.post('/upload', upload.any(), (req, res, next) => {
   res.end();
 });
+
+app.post(
+  '/admin/schema',
+  createProxyMiddleware({
+    target: 'https://alpha:8080/admin/schema',
+    changeOrigin: true,
+  })
+);
 
 module.exports = app;
