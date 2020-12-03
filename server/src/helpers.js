@@ -1,10 +1,9 @@
 const fs = require('fs');
+const { getHeapCodeStatistics } = require('v8');
 
 const getFiles = (dir, baseDir = dir, files_) => {
   files_ = files_ || [];
   const files = fs.readdirSync(dir);
-  const pattern = `${baseDir}/`;
-  const re = new RegExp(pattern);
 
   for (let idx = 0; idx < files.length; idx += 1) {
     const name = dir + '/' + files[idx];
@@ -13,15 +12,22 @@ const getFiles = (dir, baseDir = dir, files_) => {
     if (stats.isDirectory()) {
       getFiles(name, baseDir, files_);
     } else {
-      const thisFile = {};
-      thisFile.name = name.replace(pattern, '');
-      thisFile.size = stats.size;
-      thisFile.modified = stats.mtime;
+      const thisFile = {
+        name: stripPathPrefix(name, baseDir),
+        size: stats.size,
+        modified: stats.mtime,
+      };
       files_.push(thisFile);
     }
   }
 
   return files_;
+};
+
+const stripPathPrefix = (str, prefix) => {
+  const pattern = `${prefix}/`;
+  const re = new RegExp(pattern);
+  return str.replace(pattern, '');
 };
 
 module.exports = {
