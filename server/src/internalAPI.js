@@ -34,7 +34,7 @@ app.post('/upload', upload.any(), (req, res, next) => {
 app.post(
   '/admin/schema',
   createProxyMiddleware({
-    target: 'https://alpha:8080/admin/schema',
+    target: 'http://alpha:8080/admin/schema',
     changeOrigin: true,
   })
 );
