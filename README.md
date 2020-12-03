@@ -33,6 +33,7 @@ The `backend` network is an internal network that can be used for the following 
 
 - Updating the GraphQL schema defintion by issuing a post request to `http://alpha_${SATNAME}:8080/admin/schema`.
 - Uploading static files by issuing a post request to `http://app_${SATNAME}:5000/upload`.
+- A JSON listing of the static files currently stored on the server can be obtained by sending a GET request to `http://app_${SATNAME}:5000/files`.
 
 The `proxy` network allows access from an edge router to route requests to the GraphQL API via the `/graphql` path, or to the static file server for all other paths.
 
