@@ -1,6 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const morgan = require('morgan');
+const { getFiles } = require('./helpers');
 
 const app = express();
 
@@ -18,7 +19,8 @@ const upload = multer({ storage });
 app.use(morgan('combined'));
 
 app.get('/files', (req, res, next) => {
-  res.send('hello from files');
+  const fileList = getFiles('/media/data');
+  res.json(fileList);
 });
 
 app.post('/upload', upload.any(), (req, res, next) => {
