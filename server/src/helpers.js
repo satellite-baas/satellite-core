@@ -15,6 +15,8 @@ const getFiles = (dir, baseDir = dir, files_) => {
     } else {
       const thisFile = {};
       thisFile.name = name.replace(pattern, '');
+      thisFile.size = stats.size;
+      thisFile.modified = stats.mtime;
       files_.push(thisFile);
     }
   }
