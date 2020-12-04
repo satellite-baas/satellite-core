@@ -48,6 +48,15 @@ app.post(
   })
 );
 
+// Proxies an internal POST to dgraph at the /admin endpoint - for retreiving the loaded schema.
+app.post(
+  '/admin',
+  createProxyMiddleware({
+    target: 'http://alpha:8080',
+    changeOrigin: true,
+  })
+);
+
 // Proxies an internal POST to the graphql endpoint to the alpha dGraph instance.
 // This should be used for introspection queries.
 app.post(
