@@ -31,13 +31,12 @@ Deployment of this stack requires two existing overlay networks to be present on
 
 The `backend` network is an internal network that can be used for the following administrative actions. These actions should be performed by applications on the same internal network, where the user has been authenticated appropriately.
 
-- Updating the GraphQL schema defintion by issuing a post request to `http://alpha_${SATNAME}:8080/admin/schema`.
+- Updating the GraphQL schema defintion by issuing a post request to `http://app_${SATNAME}:5000/admin/schema`.
 - Uploading static files by issuing a post request to `http://app_${SATNAME}:5000/upload`.
 - A JSON listing of the static files currently stored on the server can be obtained by sending a GET request to `http://app_${SATNAME}:5000/files`.
+- To delete a file, send a DELETE request with JSON of the form `{"fileName": "name.ext"}` to `http://app_${SATNAME}:5000/file`.
 
-The `proxy` network allows access from an edge router to route requests to the GraphQL API via the `/graphql` path, or to the static file server for all other paths.
-
-The internal `stack` network is used by the application server in order to proxy requests to the database after verifying the correct API key is present on the incoming request header (`X-API-Key`).
+The `proxy` network allows access from an edge router to route requests to the stack web proxy. The stack web proxy either serves static files, or uses the internal API server to authenticate requests and then proxies them to the backend database.
 
 ### Deployment
 

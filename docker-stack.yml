@@ -24,7 +24,7 @@ services:
   app_server:
     image: 'satellitebaas/core-server'
     environment:
-      # - APIKEY=${APIKEY}
+      - APIKEY=${APIKEY}
       - SATNAME=${SATNAME}
     volumes:
       - 'storage:/media/data'
