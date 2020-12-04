@@ -24,7 +24,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.use(morgan('combined'));
-app.use(express.json());
 
 // Validates that the request has a valid API key, and returns a response with
 // and auth token the dGraph expects.
@@ -44,7 +43,7 @@ app.post('/apikey', (req, res) => {
 app.post(
   '/admin/schema',
   createProxyMiddleware({
-    target: 'http://alpha:8080/admin/schema',
+    target: 'http://alpha:8080',
     changeOrigin: true,
   })
 );
@@ -56,10 +55,10 @@ app.get('/files', (req, res) => {
 });
 
 // Deletes a file from the server.
-app.delete('/file', (req, res) => {
+app.delete('/file', express.json(), (req, res) => {
   const path = `${FILES_DIR}/${req.body.fileName}`;
   fs.unlinkSync(path);
-  res.send(200).send();
+  res.status(200).send();
 });
 
 // Uploads a file to the server

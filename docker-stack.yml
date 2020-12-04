@@ -1,7 +1,7 @@
 version: '3.8'
 
 services:
-  file_server:
+  web_proxy:
     image: nginx:1.19-alpine
     volumes:
       - ./nginx:/etc/nginx:ro
@@ -11,10 +11,14 @@ services:
     deploy:
       labels:
         - 'traefik.enable=true'
-        - 'traefik.http.services.${SATNAME}_files.loadbalancer.server.port=80'
-        - 'traefik.http.routers.${SATNAME}_files.rule=Host(`${SATNAME}.${DOMAIN}`)'
-        - 'traefik.http.routers.${SATNAME}_files.entrypoints=websecure'
-        - 'traefik.http.routers.${SATNAME}_files.tls.certresolver=le'
+        - 'traefik.http.services.${SATNAME}.loadbalancer.server.port=80'
+        - 'traefik.http.routers.${SATNAME}.rule=Host(`${SATNAME}.${DOMAIN}`)'
+        - 'traefik.http.routers.${SATNAME}.entrypoints=websecure'
+        - 'traefik.http.routers.${SATNAME}.tls.certresolver=le'
+        - 'traefik.http.routers.${SATNAME}_files.middlewares=corsHeaders'
+        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
+        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
+        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
 
   app_server:
     image: 'satellitebaas/core-server'
@@ -24,30 +28,16 @@ services:
     volumes:
       - 'storage:/media/data'
     networks:
-      proxy:
+      stack:
       backend:
         aliases:
           - app_${SATNAME}
-    deploy:
-      labels:
-        - 'traefik.enable=true'
-        - 'traefik.http.services.${SATNAME}_app.loadbalancer.server.port=3000'
-        - 'traefik.http.routers.${SATNAME}_app.rule=Host(`${SATNAME}.${DOMAIN}`) && PathPrefix(`/graphql`)'
-        - 'traefik.http.routers.${SATNAME}_app.entrypoints=websecure'
-        - 'traefik.http.routers.${SATNAME}_app.tls.certresolver=le'
-        - 'traefik.http.routers.${SATNAME}_app.middlewares=corsHeaders'
-        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowMethods=GET,OPTIONS,PUT'
-        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowOrigin=*'
-        - 'traefik.http.middlewares.corsHeaders.headers.accessControlAllowHeaders=*'
 
   alpha:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
     networks:
-      backend:
-        aliases:
-          - alpha_${SATNAME}
       stack:
     command: dgraph alpha --my=alpha:7080 --zero=zero:5080 --graphql_extensions=false --whitelist 0.0.0.0/0
 
