@@ -54,16 +54,16 @@ app.get('/files', (req, res) => {
   res.json(fileList);
 });
 
-// Deletes a file from the server.
-app.delete('/file', express.json(), (req, res) => {
-  const path = `${FILES_DIR}/${req.body.fileName}`;
-  fs.unlinkSync(path);
-  res.status(200).send();
-});
-
 // Uploads a file to the server
 app.post('/upload', upload.any(), (req, res, next) => {
   res.end();
+});
+
+app.use(express.json());
+app.delete('/file', (req, res) => {
+  const path = `${FILES_DIR}/${req.body.fileName}`;
+  fs.unlinkSync(path);
+  res.status(200).send();
 });
 
 app.listen(PORT, () => {
