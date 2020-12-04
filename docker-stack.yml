@@ -40,7 +40,7 @@ services:
       - dgraph_data:/dgraph
     networks:
       stack:
-    command: dgraph alpha --my=alpha:7080 --zero=zero:5080 --graphql_extensions=false --whitelist 0.0.0.0/0
+    command: dgraph alpha --my=alpha:7080 --zero=zero:5080 --graphql_extensions=false --lru_mb=1024 --whitelist 0.0.0.0/0
 
   zero:
     image: dgraph/dgraph:latest

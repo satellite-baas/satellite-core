@@ -57,7 +57,7 @@ services:
     image: dgraph/dgraph:latest
     volumes:
       - dgraph_data:/dgraph
-    command: dgraph alpha --my=alpha:7080 --zero=Zero:5080 --graphql_extensions=false --whitelist 0.0.0.0/0
+    command: dgraph alpha --my=alpha:7080 --zero=Zero:5080 --graphql_extensions=false --lru_mb=1024 --whitelist 0.0.0.0/0
 
   zero:
     image: dgraph/dgraph:latest

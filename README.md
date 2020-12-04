@@ -35,6 +35,8 @@ The `backend` network is an internal network that can be used for the following 
 - Uploading static files by issuing a post request to `http://app_${SATNAME}:5000/upload`.
 - A JSON listing of the static files currently stored on the server can be obtained by sending a GET request to `http://app_${SATNAME}:5000/files`.
 - To delete a file, send a DELETE request with JSON of the form `{"fileName": "name.ext"}` to `http://app_${SATNAME}:5000/file`.
+- A health check can be performed by sending a GET request to `http://app_${SATNAME}:5000/health`. A health instance will respond with a `200 OK`.
+- Queries to the instance GraphQL API can be sent via POST request to `http://app_${SATNAME}:5000/graphql`.
 
 The `proxy` network allows access from an edge router to route requests to the stack web proxy. The stack web proxy either serves static files, or uses the internal API server to authenticate requests and then proxies them to the backend database.
 

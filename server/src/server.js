@@ -48,6 +48,22 @@ app.post(
   })
 );
 
+// Proxies an internal POST to the graphql endpoint to the alpha dGraph instance.
+// This should be used for introspection queries.
+app.post(
+  '/graphql',
+  createProxyMiddleware({
+    target: 'http://alpha:8080',
+    changeOrigin: true,
+    ws: true,
+  })
+);
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).send();
+});
+
 // Returns a list of files stored on the server.
 app.get('/files', (req, res) => {
   const fileList = getFiles(FILES_DIR);
