@@ -26,7 +26,7 @@ const upload = multer({ storage });
 app.use(morgan('combined'));
 
 // Validates that the request has a valid API key, and returns a response with
-// and auth token the dGraph expects.
+// an auth token that Dgraph expects.
 app.post('/apikey', (req, res) => {
   if (API_KEY && req.header('X-API-Key') !== API_KEY) {
     res.sendStatus(401);
@@ -39,7 +39,7 @@ app.post('/apikey', (req, res) => {
   res.status(200).send();
 });
 
-// Proxies an internal POST of the dGraph schema to the alpha dGraph instance.
+// Proxies an internal POST of the Dgraph schema to the alpha Dgraph instance.
 app.post(
   '/admin/schema',
   createProxyMiddleware({
@@ -48,7 +48,7 @@ app.post(
   })
 );
 
-// Proxies an internal POST to dgraph at the /admin endpoint - for retreiving the loaded schema.
+// Proxies an internal POST to Dgraph at the /admin endpoint - for retrieving the loaded schema.
 app.post(
   '/admin',
   createProxyMiddleware({
@@ -57,7 +57,7 @@ app.post(
   })
 );
 
-// Proxies an internal POST to the graphql endpoint to the alpha dGraph instance.
+// Proxies an internal POST to the graphql endpoint to the alpha Dgraph instance.
 // This should be used for introspection queries.
 app.post(
   '/graphql',
@@ -68,10 +68,14 @@ app.post(
   })
 );
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).send();
-});
+// Health check endpoint - proxies the request to the Dgraph alpha instance.
+app.get(
+  '/health',
+  createProxyMiddleware({
+    target: 'http://alpha:8080',
+    changeOrigin: true,
+  })
+);
 
 // Returns a list of files stored on the server.
 app.get('/files', (req, res) => {
