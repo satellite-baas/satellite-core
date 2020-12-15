@@ -1,4 +1,14 @@
 const fs = require('fs');
+const path = require('path');
+const extract = require('extract-zip');
+
+const unZip = async (fileName, dirName) => {
+  try {
+    await extract(`${dirName}/${fileName}`, { dir: path.resolve(dirName) });
+  } catch (err) {
+    console.log(err);
+  }
+};
 
 const getFiles = (dir, baseDir = dir, files_) => {
   files_ = files_ || [];
@@ -37,4 +47,5 @@ const stripPathPrefix = (str, prefix) => {
 module.exports = {
   getFiles,
   extractTokenFromBearer,
+  unZip,
 };

@@ -4,7 +4,7 @@ const morgan = require('morgan');
 const fs = require('fs');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
-const { getFiles, extractTokenFromBearer } = require('./helpers');
+const { getFiles, extractTokenFromBearer, unzip, unZip } = require('./helpers');
 
 const API_KEY = process.env.APIKEY;
 const FILES_DIR = '/media/data';
@@ -21,7 +21,7 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload = multer({ storage });
+const upload = multer({ storage }).any();
 
 app.use(morgan('combined'));
 
@@ -83,8 +83,26 @@ app.get('/files', (req, res) => {
   res.json(fileList);
 });
 
-// Uploads a file to the server
-app.post('/upload', upload.any(), (req, res, next) => {
+// Uploads a file to the server.  If it's a zip file, this will delete all the
+// existing files, extract the zip file, and then delete the zip file.
+app.post('/upload', upload, async (req, res, next) => {
+  const fileList = getFiles(FILES_DIR);
+  const zipIdx = fileList.findIndex((f) => f.name.match(/\.zip$/i));
+
+  if (zipIdx !== -1) {
+    const zipFileName = fileList[zipIdx].name;
+
+    fileList.forEach((f, idx) => {
+      if (idx !== zipIdx) {
+        const path = `${FILES_DIR}/${f.name}`;
+        fs.unlinkSync(path);
+      }
+    });
+
+    await unZip(zipFileName, FILES_DIR);
+    fs.unlinkSync(`${FILES_DIR}/${zipFileName}`);
+  }
+
   res.end();
 });
 
