@@ -1,58 +1,44 @@
-const express = require('express');
-const multer = require('multer');
-const morgan = require('morgan');
-const fs = require('fs');
-const { createProxyMiddleware } = require('http-proxy-middleware');
+const express = require("express");
+const morgan = require("morgan");
+const { createProxyMiddleware } = require("http-proxy-middleware");
 
-const { getFiles, extractTokenFromBearer, unzip, unZip } = require('./helpers');
+const { extractTokenFromBearer } = require("./helpers");
 
 const API_KEY = process.env.APIKEY;
-const FILES_DIR = '/media/data';
 const PORT = 5000;
 
 const app = express();
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, FILES_DIR);
-  },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
-  },
-});
-
-const upload = multer({ storage }).any();
-
-app.use(morgan('combined'));
+app.use(morgan("combined"));
 
 // Validates that the request has a valid API key, and returns a response with
 // an auth token that Dgraph expects.
-app.post('/apikey', (req, res) => {
-  if (API_KEY && req.header('X-API-Key') !== API_KEY) {
+app.post("/apikey", (req, res) => {
+  if (API_KEY && req.header("X-API-Key") !== API_KEY) {
     res.sendStatus(401);
   }
 
   const authString = req.headers.authorization;
-  const token = authString ? extractTokenFromBearer(authString) : '';
+  const token = authString ? extractTokenFromBearer(authString) : "";
 
-  res.set('X-Dgraph-AccessToken', token);
+  res.set("X-Dgraph-AccessToken", token);
   res.status(200).send();
 });
 
 // Proxies an internal POST of the Dgraph schema to the alpha Dgraph instance.
 app.post(
-  '/admin/schema',
+  "/admin/schema",
   createProxyMiddleware({
-    target: 'http://alpha:8080',
+    target: "http://dgraph:8080",
     changeOrigin: true,
   })
 );
 
 // Proxies an internal POST to Dgraph at the /admin endpoint - for retrieving the loaded schema.
 app.post(
-  '/admin',
+  "/admin",
   createProxyMiddleware({
-    target: 'http://alpha:8080',
+    target: "http://dgraph:8080",
     changeOrigin: true,
   })
 );
@@ -60,9 +46,9 @@ app.post(
 // Proxies an internal POST to the graphql endpoint to the alpha Dgraph instance.
 // This should be used for introspection queries.
 app.post(
-  '/graphql',
+  "/graphql",
   createProxyMiddleware({
-    target: 'http://alpha:8080',
+    target: "http://dgraph:8080",
     changeOrigin: true,
     ws: true,
   })
@@ -70,48 +56,12 @@ app.post(
 
 // Health check endpoint - proxies the request to the Dgraph alpha instance.
 app.get(
-  '/health',
+  "/health",
   createProxyMiddleware({
-    target: 'http://alpha:8080',
+    target: "http://dgraph:8080",
     changeOrigin: true,
   })
 );
-
-// Returns a list of files stored on the server.
-app.get('/files', (req, res) => {
-  const fileList = getFiles(FILES_DIR);
-  res.json(fileList);
-});
-
-// Uploads a file to the server.  If it's a zip file, this will delete all the
-// existing files, extract the zip file, and then delete the zip file.
-app.post('/upload', upload, async (req, res, next) => {
-  const fileList = getFiles(FILES_DIR);
-  const zipIdx = fileList.findIndex((f) => f.name.match(/\.zip$/i));
-
-  if (zipIdx !== -1) {
-    const zipFileName = fileList[zipIdx].name;
-
-    fileList.forEach((f, idx) => {
-      if (idx !== zipIdx) {
-        const path = `${FILES_DIR}/${f.name}`;
-        fs.unlinkSync(path);
-      }
-    });
-
-    await unZip(zipFileName, FILES_DIR);
-    fs.unlinkSync(`${FILES_DIR}/${zipFileName}`);
-  }
-
-  res.end();
-});
-
-app.use(express.json());
-app.delete('/file', (req, res) => {
-  const path = `${FILES_DIR}/${req.body.fileName}`;
-  fs.unlinkSync(path);
-  res.status(200).send();
-});
 
 app.listen(PORT, () => {
   console.log(`Instance API server listening at http://localhost:${PORT}`);
